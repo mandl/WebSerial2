@@ -1,0 +1,16 @@
+{
+  "name": "WebSerial2",
+  "version": "1.0.0",
+  "description": "High-performance WebSerial console for ESP32.",
+  "keywords": "webserial, logging, debug, esp32, websocket",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mandl/WebSerial2"
+  },
+  "frameworks": "arduino",
+  "platforms": "espressif32",
+  "dependencies": {
+    "esp32async/ESPAsyncWebServer": "^3.9.6"
+  },
+  "examples": "examples/BasicUsage/BasicUsage.cpp"
+}

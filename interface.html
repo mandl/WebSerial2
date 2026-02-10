@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSerial Pro Console</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzAwZjJmZiI+PHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yMCA0SDRjLTEuMSAwLTIgLjktMiAydjEyYzAgMS4xLjkgMiAyIDJoMTZsNC00VjZjMC0xLjEtLjktMi0yLTJ6bTAgMTIuMTdMMTcuMTcgMTlINGMtLjU1IDAtMS0uNDUtMS0xVjZjMC0uNTUuNDUtMSAxLTFoMTZjLjU1IDAgMSAuNDUgMSAxdiAxMC4xN3pNMTggMTNoLTh2Mmgydi0yaDZ2LTJ6bS04LTNoMnYyaC0yek03IDEzaDF2MmgtMVYxM3ptMC0zaDF2MmgtMVYxMHoiLz48L3N2Zz4="
+    />
+    <style>
+      :root {
+        --bg: #0d0f14;
+        --card: rgba(255, 255, 255, 0.05);
+        --accent: #00f2ff;
+        --text: #e0e0e0;
+        --dim: #666;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* Stats Bar */
+      header {
+        background: var(--card);
+        backdrop-filter: blur(12px);
+        padding: 12px 20px;
+        display: flex;
+        gap: 25px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.85em;
+        letter-spacing: 0.5px;
+      }
+      .stat-item {
+        display: flex;
+        gap: 8px;
+      }
+      .label {
+        color: var(--dim);
+        text-transform: uppercase;
+        font-size: 0.8em;
+      }
+      .val {
+        color: var(--accent);
+        font-weight: bold;
+        font-family: monospace;
+      }
+
+      /* Terminal Display */
+      #terminal {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        font-family: "Cascadia Code", "Fira Code", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        background: radial-gradient(circle at top left, #1a1c24, #0d0f14);
+      }
+      .line {
+        margin-bottom: 2px;
+        display: flex;
+        gap: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+      }
+      .ts {
+        color: var(--dim);
+        min-width: 100px;
+        white-space: nowrap;
+        user-select: none;
+      }
+      .msg {
+        word-break: break-all;
+      }
+      .cmd {
+        color: var(--accent);
+        font-weight: bold;
+      }
+      .sys {
+        color: #ffa500;
+        font-style: italic;
+      }
+
+      /* Control Bar */
+      footer {
+        background: var(--card);
+        padding: 15px 20px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      input {
+        flex: 1;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid #333;
+        color: #fff;
+        padding: 10px 15px;
+        border-radius: 6px;
+        outline: none;
+        font-family: monospace;
+      }
+      input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 8px rgba(0, 242, 255, 0.2);
+      }
+
+      button {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid #444;
+        color: white;
+        padding: 10px 18px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+        white-space: nowrap;
+        transition: all 0.2s;
+      }
+      button:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: var(--accent);
+      }
+      button.active {
+        background: var(--accent);
+        color: #000;
+        border-color: var(--accent);
+        font-weight: bold;
+      }
+
+      /* Custom Scrollbar */
+      #terminal::-webkit-scrollbar {
+        width: 8px;
+      }
+      #terminal::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      #terminal::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 4px;
+      }
+      #terminal::-webkit-scrollbar-thumb:hover {
+        background: #444;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="stat-item">
+        <span class="label">Status</span
+        ><span id="status" class="val">Connecting...</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">Latency</span
+        ><span id="ping" class="val">-- ms</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">Uptime</span><span id="uptime" class="val">0s</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">Lines</span><span id="msgCount" class="val">0</span>
+      </div>
+    </header>
+
+    <div id="terminal"></div>
+
+    <footer>
+      <button id="clearBtn">Clear</button>
+      <button id="scrollBtn" class="active">Auto-Scroll</button>
+      <input
+        type="text"
+        id="cmdInput"
+        placeholder="Enter command..."
+        autocomplete="off"
+      />
+      <button id="sendBtn" style="background: var(--accent); color: #000">
+        Send
+      </button>
+    </footer>
+
+    <script>
+      const term = document.getElementById("terminal");
+      const input = document.getElementById("cmdInput");
+      const status = document.getElementById("status");
+      const pingDisplay = document.getElementById("ping");
+      const uptime = document.getElementById("uptime");
+      const msgCount = document.getElementById("msgCount");
+
+      let socket;
+      let isAutoScroll = true;
+      let messageCounter = 0;
+      let startTime = Date.now();
+      let pingStart;
+
+      // Helper: Timestamp [HH:MM:SS.ms]
+      const getTs = () => {
+        const d = new Date();
+        const ms = d.getMilliseconds().toString().padStart(3, "0");
+        return `[${d.toLocaleTimeString("en-GB", { hour12: false })}.${ms}]`;
+      };
+
+      function addLog(text, type = "default") {
+        messageCounter++;
+        msgCount.innerText = messageCounter;
+
+        const line = document.createElement("div");
+        line.className = "line";
+
+        let contentClass = "";
+        if (type === "cmd") contentClass = "cmd";
+        if (type === "sys") contentClass = "sys";
+
+        line.innerHTML = `
+            <span class="ts">${getTs()}</span>
+            <span class="msg ${contentClass}">${text}</span>
+        `;
+
+        term.appendChild(line);
+        if (isAutoScroll) term.scrollTop = term.scrollHeight;
+
+        // Limit lines to 500 to keep browser fast
+        if (term.childNodes.length > 500) term.removeChild(term.firstChild);
+      }
+
+      function connect() {
+        // Use current window host for connection
+        socket = new WebSocket(`ws://${window.location.hostname}/webserialws`);
+
+        socket.onopen = () => {
+          status.innerText = "ONLINE";
+          status.style.color = "#00ff88";
+          addLog("System connected and ready.", "sys");
+          startPingLoop();
+        };
+
+        socket.onmessage = (event) => {
+          if (event.data === "__pong__") {
+            pingDisplay.innerText = Date.now() - pingStart + " ms";
+            return;
+          }
+
+          // Split the batch by newline and process each line
+          const lines = event.data.split("\n");
+          lines.forEach((line) => {
+            if (line.trim().length > 0) {
+              addLog(line);
+            }
+          });
+        };
+
+        socket.onclose = () => {
+          status.innerText = "OFFLINE - Retrying...";
+          status.style.color = "#ffaa00";
+          pingDisplay.innerText = "-- ms";
+          setTimeout(connect, 2000); // Auto-reconnect
+        };
+      }
+
+      // Ping Loop for Latency
+      function startPingLoop() {
+        if (socket.readyState === WebSocket.OPEN) {
+          pingStart = Date.now();
+          socket.send("__ping__");
+          setTimeout(startPingLoop, 3000); // Ping every 3 seconds
+        }
+      }
+
+      const sendCmd = () => {
+        const val = input.value.trim();
+        if (!val || socket.readyState !== WebSocket.OPEN) return;
+        socket.send(val);
+        addLog(`> ${val}`, "cmd");
+        input.value = "";
+      };
+
+      // Event Listeners
+      document.getElementById("sendBtn").onclick = sendCmd;
+      input.onkeydown = (e) => {
+        if (e.key === "Enter") sendCmd();
+      };
+
+      document.getElementById("clearBtn").onclick = () => {
+        term.innerHTML = "";
+        messageCounter = 0;
+        msgCount.innerText = "0";
+      };
+
+      document.getElementById("scrollBtn").onclick = function () {
+        isAutoScroll = !isAutoScroll;
+        this.classList.toggle("active");
+        this.innerText = isAutoScroll ? "Auto-Scroll" : "Manual Scroll";
+      };
+
+      // Uptime Counter
+      setInterval(() => {
+        const sec = Math.floor((Date.now() - startTime) / 1000);
+        uptime.innerText = sec + "s";
+      }, 1000);
+
+      // Initial Connection
+      connect();
+    </script>
+  </body>
+</html>
