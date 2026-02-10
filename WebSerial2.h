@@ -23,10 +23,8 @@ public:
 private:
     AsyncWebSocket _ws;
     String _logBuffer;
-    unsigned long lastBatchTime = 0;
     const int MAX_BUFFER_SIZE = 1024; // Bytes
     const int BATCH_TIMEOUT = 100;    // Milliseconds
-    unsigned long _lastBatchTime;
     void _onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
                   AwsEventType type, void *arg, uint8_t *data, size_t len);
 };

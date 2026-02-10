@@ -3,7 +3,7 @@
 
 #include "WebSerial2.h"
 
-WebSerial2::WebSerial2(uint16_t port) : _ws("/webserialws"), _logBuffer(""), _lastBatchTime(0) {}
+WebSerial2::WebSerial2(uint16_t port) : _ws("/webserialws"), _logBuffer("") {}
 
 void WebSerial2::begin(AsyncWebServer *server)
 {
@@ -38,16 +38,16 @@ void WebSerial2::println(String msg)
 
 void WebSerial2::print(String msg)
 {
-    _logBuffer += msg;
+    _logBuffer += msg; // msg should already contain the full "Label + Value"
 
-    // Send immediately if buffer is getting large or timeout reached
-    if (_logBuffer.length() > MAX_BUFFER_SIZE || (millis() - lastBatchTime > BATCH_TIMEOUT))
+    // Only send if the message we just added contains a newline
+    // OR the buffer is getting dangerously large
+    if (_logBuffer.indexOf('\n') != -1 || _logBuffer.length() > MAX_BUFFER_SIZE)
     {
         if (_ws.count() > 0 && _ws.availableForWriteAll())
         {
             _ws.textAll(_logBuffer);
-            _logBuffer = ""; // Clear buffer
-            lastBatchTime = millis();
+            _logBuffer = "";
         }
     }
 }
